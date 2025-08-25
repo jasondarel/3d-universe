@@ -1,0 +1,545 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+App.jsx
+components/CelestialObject.jsx
+components/InfoPanel.jsx
+components/Universe.jsx
+index.css
+main.jsx
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="App.jsx">
+import React from "react";
+import Universe from "./components/Universe";
+
+function App() {
+  return (
+    <div className="w-full h-screen bg-space-dark">
+      <Universe />
+    </div>
+  );
+}
+
+export default App;
+</file>
+
+<file path="components/CelestialObject.jsx">
+import React, { useRef, useState } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+
+function CelestialObject({ object, onClick }) {
+  const meshRef = useRef();
+  const [hovered, setHovered] = useState(false);
+
+  // Gentle floating animation
+  useFrame((state) => {
+    if (meshRef.current) {
+      meshRef.current.rotation.x += 0.005;
+      meshRef.current.rotation.y += 0.005;
+
+      // Different animation based on type
+      if (object.type === "black_hole") {
+        meshRef.current.rotation.z += 0.02;
+      } else if (object.type === "nebula") {
+        meshRef.current.position.y =
+          object.position[1] + Math.sin(state.clock.elapsedTime) * 0.5;
+      }
+    }
+  });
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+    onClick(object);
+  };
+
+  const getGeometry = () => {
+    switch (object.type) {
+      case "black_hole":
+        return <sphereGeometry args={[object.size, 32, 32]} />;
+      case "nebula":
+        return <sphereGeometry args={[object.size, 16, 16]} />;
+      default:
+        return <sphereGeometry args={[object.size, 24, 24]} />;
+    }
+  };
+
+  const getMaterial = () => {
+    const baseProps = {
+      color: object.color,
+      emissive: object.type === "star" ? object.color : "#000000",
+      emissiveIntensity: object.type === "star" ? 0.3 : 0,
+    };
+
+    switch (object.type) {
+      case "black_hole":
+        return (
+          <meshStandardMaterial
+            {...baseProps}
+            color="#1a1a1a"
+            emissive="#000000"
+            roughness={0.1}
+            metalness={0.9}
+          />
+        );
+      case "nebula":
+        return (
+          <meshStandardMaterial
+            {...baseProps}
+            transparent
+            opacity={0.6}
+            emissiveIntensity={0.2}
+          />
+        );
+      case "star":
+        return (
+          <meshStandardMaterial
+            {...baseProps}
+            emissiveIntensity={hovered ? 0.5 : 0.3}
+          />
+        );
+      default:
+        return <meshStandardMaterial {...baseProps} />;
+    }
+  };
+
+  return (
+    <group position={object.position}>
+      <mesh
+        ref={meshRef}
+        onClick={handleClick}
+        onPointerOver={() => setHovered(true)}
+        onPointerOut={() => setHovered(false)}
+        scale={hovered ? 1.1 : 1}
+      >
+        {getGeometry()}
+        {getMaterial()}
+      </mesh>
+
+      {/* Glow effect for stars */}
+      {object.type === "star" && (
+        <mesh scale={hovered ? 2.2 : 2}>
+          <sphereGeometry args={[object.size, 16, 16]} />
+          <meshBasicMaterial
+            color={object.color}
+            transparent
+            opacity={0.1}
+            side={THREE.BackSide}
+          />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
+export default CelestialObject;
+</file>
+
+<file path="components/InfoPanel.jsx">
+import React from "react";
+import { motion, AnimatePresence } from "framer-motion";
+
+const typeColors = {
+  star: "border-yellow-400 bg-yellow-900/20",
+  planet: "border-green-400 bg-green-900/20",
+  nebula: "border-purple-400 bg-purple-900/20",
+  black_hole: "border-gray-400 bg-gray-900/20",
+};
+
+const typeEmojis = {
+  star: "⭐",
+  planet: "🪐",
+  nebula: "🌌",
+  black_hole: "🕳️",
+};
+
+function InfoPanel({ object, onClose }) {
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.8, y: 20 }}
+        transition={{ duration: 0.3 }}
+        className="fixed bottom-6 left-6 right-6 md:left-6 md:right-auto md:max-w-md z-20"
+      >
+        <div
+          className={`bg-black/80 backdrop-blur-sm rounded-lg border-2 ${
+            typeColors[object.type]
+          } p-6 text-white shadow-2xl`}
+        >
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">{typeEmojis[object.type]}</span>
+              <div>
+                <h3 className="text-xl font-bold text-white">{object.name}</h3>
+                <p className="text-sm text-gray-300 capitalize">
+                  {object.type.replace("_", " ")}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-4 h-4 rounded-full border border-white/30"
+                style={{ backgroundColor: object.color }}
+              ></div>
+              <span className="text-sm text-gray-300">
+                Color: {object.color}
+              </span>
+            </div>
+
+            <div className="text-sm text-gray-300">
+              <span>Size: {object.size} units</span>
+            </div>
+
+            <div className="text-sm text-gray-300">
+              <span>
+                Position: ({object.position.map((p) => p.toFixed(1)).join(", ")}
+                )
+              </span>
+            </div>
+
+            <div className="mt-4 p-3 bg-white/5 rounded border-l-4 border-blue-400">
+              <p className="text-sm text-blue-100 font-medium">💡 Fun Fact:</p>
+              <p className="text-sm text-gray-200 mt-1">{object.fun_fact}</p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+export default InfoPanel;
+</file>
+
+<file path="components/Universe.jsx">
+import React, { useState, Suspense } from "react";
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls, Stars } from "@react-three/drei";
+import CelestialObject from "./CelestialObject";
+import InfoPanel from "./InfoPanel";
+
+const celestialObjects = [
+  {
+    id: 1,
+    type: "star",
+    name: "Proxima Centauri",
+    position: [-45, 20, -30],
+    color: "#ff6b6b",
+    size: 8,
+    fun_fact:
+      "The closest star to our solar system, only 4.24 light-years away!",
+  },
+  {
+    id: 2,
+    type: "planet",
+    name: "Kepler-442b",
+    position: [60, -15, 40],
+    color: "#4ecdc4",
+    size: 5,
+    fun_fact: "This super-Earth is located in the habitable zone of its star.",
+  },
+  {
+    id: 3,
+    type: "star",
+    name: "Sol (Our Sun)",
+    position: [0, 0, 0],
+    color: "#ffd700",
+    size: 14,
+    fun_fact:
+      "Our home star! It contains 99.86% of all the mass in our solar system.",
+  },
+  {
+    id: 4,
+    type: "nebula",
+    name: "Orion Nebula",
+    position: [-80, 30, 20],
+    color: "#fd79a8",
+    size: 15,
+    fun_fact:
+      "A stellar nursery where new stars are born from cosmic dust and gas.",
+  },
+  {
+    id: 5,
+    type: "star",
+    name: "Betelgeuse",
+    position: [35, 50, -60],
+    color: "#e17055",
+    size: 10,
+    fun_fact: "A red supergiant that could explode as a supernova any time!",
+  },
+  {
+    id: 6,
+    type: "planet",
+    name: "HD 209458 b",
+    position: [-20, -40, 70],
+    color: "#fdcb6e",
+    size: 6,
+    fun_fact:
+      "The first exoplanet discovered to have water vapor in its atmosphere.",
+  },
+  {
+    id: 7,
+    type: "star",
+    name: "Vega",
+    position: [75, -25, -10],
+    color: "#74b9ff",
+    size: 7,
+    fun_fact: "Once the northern pole star and will be again around 13,727 CE.",
+  },
+  {
+    id: 8,
+    type: "nebula",
+    name: "Crab Nebula",
+    position: [40, 15, 85],
+    color: "#a29bfe",
+    size: 12,
+    fun_fact:
+      "The remnant of a supernova observed by Chinese astronomers in 1054 CE.",
+  },
+  {
+    id: 9,
+    type: "planet",
+    name: "TRAPPIST-1e",
+    position: [-60, 45, -45],
+    color: "#00b894",
+    size: 4,
+    fun_fact: "One of seven Earth-sized planets in the TRAPPIST-1 system.",
+  },
+  {
+    id: 10,
+    type: "star",
+    name: "Rigel",
+    position: [25, -55, 30],
+    color: "#0984e3",
+    size: 9,
+    fun_fact:
+      "A blue supergiant star that is 40,000 times more luminous than our Sun.",
+  },
+  {
+    id: 11,
+    type: "black_hole",
+    name: "Cygnus X-1",
+    position: [-35, 10, -80],
+    color: "#2d3436",
+    size: 8,
+    fun_fact: "The first black hole ever discovered, confirmed in 1971.",
+  },
+  {
+    id: 12,
+    type: "nebula",
+    name: "Eagle Nebula",
+    position: [55, -10, 15],
+    color: "#e84393",
+    size: 18,
+    fun_fact: 'Home to the famous "Pillars of Creation" stellar formation.',
+  },
+  {
+    id: 13,
+    type: "planet",
+    name: "Gliese 581g",
+    position: [10, 35, -90],
+    color: "#00cec9",
+    size: 5,
+    fun_fact:
+      "Potentially the first discovered Earth-like planet in a habitable zone.",
+  },
+  {
+    id: 14,
+    type: "star",
+    name: "Polaris",
+    position: [-75, -30, 55],
+    color: "#ffeaa7",
+    size: 6,
+    fun_fact: "The current North Star, used for navigation for centuries.",
+  },
+  {
+    id: 15,
+    type: "nebula",
+    name: "Horsehead Nebula",
+    position: [85, 25, -25],
+    color: "#6c5ce7",
+    size: 14,
+    fun_fact:
+      "A dark nebula silhouetted against the bright Orion constellation.",
+  },
+];
+
+function Universe() {
+  const [selectedObject, setSelectedObject] = useState(null);
+
+  const handleObjectClick = (object) => {
+    setSelectedObject(object);
+  };
+
+  const handleClosePanel = () => {
+    setSelectedObject(null);
+  };
+
+  return (
+    <>
+      <Canvas
+        camera={{ position: [0, 0, 100], fov: 60 }}
+        className="w-full h-full"
+      >
+        <Suspense fallback={null}>
+          {/* Ambient lighting */}
+          <ambientLight intensity={0.3} />
+          <pointLight position={[10, 10, 10]} intensity={0.8} />
+
+          {/* Background stars */}
+          <Stars
+            radius={300}
+            depth={50}
+            count={5000}
+            factor={4}
+            saturation={0}
+            fade
+            speed={1}
+          />
+
+          {/* Celestial objects */}
+          {celestialObjects.map((object) => (
+            <CelestialObject
+              key={object.id}
+              object={object}
+              onClick={handleObjectClick}
+            />
+          ))}
+
+          {/* Camera controls */}
+          <OrbitControls
+            enableZoom={true}
+            enablePan={true}
+            enableRotate={true}
+            zoomSpeed={0.8}
+            panSpeed={0.8}
+            rotateSpeed={0.4}
+            minDistance={20}
+            maxDistance={200}
+          />
+        </Suspense>
+      </Canvas>
+
+      {selectedObject && (
+        <InfoPanel object={selectedObject} onClose={handleClosePanel} />
+      )}
+
+      {/* UI Instructions */}
+      <div className="absolute top-4 left-4 text-white/70 text-sm z-10">
+        <p className="mb-2">🌌 3D Interactive Universe</p>
+        <p className="text-xs">Click on celestial objects to learn more!</p>
+        <p className="text-xs">
+          Drag to rotate • Scroll to zoom • Right-click + drag to pan
+        </p>
+      </div>
+    </>
+  );
+}
+
+export default Universe;
+</file>
+
+<file path="index.css">
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+canvas {
+  display: block;
+}
+</file>
+
+<file path="main.jsx">
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App.jsx";
+import "./index.css";
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+</file>
+
+</files>
