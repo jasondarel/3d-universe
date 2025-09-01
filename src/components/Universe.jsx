@@ -1,5 +1,5 @@
 import React, { useState, Suspense, useRef } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
 import { OrbitControls, Stars } from "@react-three/drei";
 import * as THREE from "three";
 import { motion, AnimatePresence } from "framer-motion";
@@ -96,20 +96,34 @@ function CameraController({ target, onComplete }) {
   );
 }
 
+function RealisticPlanet({ object }) {
+  const texture = useLoader(THREE.TextureLoader, `/textures/${object.texture}`);
+
+  return (
+    <mesh position={object.position}>
+      <sphereGeometry args={[object.size, 64, 64]} />
+      <meshStandardMaterial map={texture} roughness={0.9} metalness={0.1} />
+    </mesh>
+  );
+}
+
 function CelestialObject({ object, onClick }) {
+  const { gl } = useThree();
   const meshRef = useRef();
   const [hovered, setHovered] = useState(false);
+  const [texture, setTexture] = useState(null);
+  const [useGeneratedTexture, setUseGeneratedTexture] = useState(false);
 
-  // Helper function to get atmosphere color based on planet color
-  const getPlanetAtmosphereColor = (planetColor) => {
-    if (planetColor.includes("#4ecdc4") || planetColor.includes("#00cec9"))
-      return "#4da6ff"; // Blue for ocean worlds
-    if (planetColor.includes("#fdcb6e")) return "#ffcc80"; // Orange for desert worlds
-    if (planetColor.includes("#74b9ff")) return "#b3e5fc"; // Light blue for ice worlds
-    if (planetColor.includes("#e17055") || planetColor.includes("#fd79a8"))
-      return "#ff6666"; // Red for volcanic worlds
-    if (planetColor.includes("#00b894")) return "#66bb6a"; // Green for forest worlds
-    return "#4da6ff"; // Default blue
+  // Helper function to get potential texture filename based on object name
+  const getTextureFilename = (object) => {
+    // Convert object name to filename-friendly format
+    const filename = object.name
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^\w\-_]/g, "")
+      .replace(/_+/g, "_");
+
+    return filename;
   };
 
   const generateTexture = (type, color) => {
@@ -324,7 +338,77 @@ function CelestialObject({ object, onClick }) {
     return texture;
   };
 
-  const texture = generateTexture(object.type, object.color);
+  // Try to load texture from public/textures, fallback to generated
+  React.useEffect(() => {
+    let cancelled = false;
+    const loader = new THREE.TextureLoader();
+
+    const useGenerated = () => {
+      if (cancelled) return;
+      const generatedTexture = generateTexture(object.type, object.color);
+      setTexture(generatedTexture);
+      setUseGeneratedTexture(true);
+    };
+
+    const onLoad = (tex) => {
+      if (cancelled) return;
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      // Better quality when zoomed
+      try {
+        tex.anisotropy = gl.capabilities.getMaxAnisotropy?.() || 1;
+      } catch {}
+      // Correct color space (newer three.js)
+      if (THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+      setTexture(tex);
+      setUseGeneratedTexture(false);
+    };
+
+    // 1) If an explicit texture is provided, try that first
+    if (object.texture) {
+      loader.load(`/textures/${object.texture}`, onLoad, undefined, () => {
+        console.warn(`Failed to load ${object.texture}, falling back…`);
+        // 2) Fallback to name-based guesses
+        const base = getTextureFilename(object);
+        const exts = [".jpg", ".png", ".jpeg"];
+        let i = 0;
+        const tryNext = () => {
+          if (i >= exts.length) return useGenerated();
+          const fname = `${base}${exts[i++]}`;
+          loader.load(`/textures/${fname}`, onLoad, undefined, tryNext);
+        };
+        tryNext();
+      });
+    } else {
+      // No explicit texture—use name-based guesses, then procedural
+      const base = getTextureFilename(object);
+      const exts = [".jpg", ".png", ".jpeg"];
+      let i = 0;
+      const tryNext = () => {
+        if (i >= exts.length) return useGenerated();
+        const fname = `${base}${exts[i++]}`;
+        loader.load(`/textures/${fname}`, onLoad, undefined, tryNext);
+      };
+      tryNext();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [object, gl]);
+
+  // Helper function to get atmosphere color based on planet color
+  const getPlanetAtmosphereColor = (planetColor) => {
+    if (planetColor.includes("#4ecdc4") || planetColor.includes("#00cec9"))
+      return "#4da6ff"; // Blue for ocean worlds
+    if (planetColor.includes("#fdcb6e")) return "#ffcc80"; // Orange for desert worlds
+    if (planetColor.includes("#74b9ff")) return "#b3e5fc"; // Light blue for ice worlds
+    if (planetColor.includes("#e17055") || planetColor.includes("#fd79a8"))
+      return "#ff6666"; // Red for volcanic worlds
+    if (planetColor.includes("#00b894")) return "#66bb6a"; // Green for forest worlds
+    return "#4da6ff"; // Default blue
+  };
+
   const normalMap = generateNormalMap(object.type);
 
   useFrame((state) => {
@@ -408,6 +492,11 @@ function CelestialObject({ object, onClick }) {
     }
   };
 
+  // Don't render until texture is loaded
+  if (!texture) {
+    return null;
+  }
+
   return (
     <group position={object.position}>
       <mesh
@@ -415,11 +504,11 @@ function CelestialObject({ object, onClick }) {
         onClick={handleClick}
         onPointerOver={() => {
           setHovered(true);
-          document.body.style.cursor = 'pointer';
+          document.body.style.cursor = "pointer";
         }}
         onPointerOut={() => {
           setHovered(false);
-          document.body.style.cursor = 'default';
+          document.body.style.cursor = "default";
         }}
         scale={hovered ? 1.1 : 1}
         castShadow
@@ -597,6 +686,7 @@ const celestialObjects = [
     name: "Kepler-442b",
     position: [120, -30, 80],
     color: "#4ecdc4",
+    texture: "earth.jpg",
     size: 5,
     fun_fact:
       "This super-Earth ocean world is located in the habitable zone of its star.",
@@ -607,6 +697,7 @@ const celestialObjects = [
     name: "Sol (Our Sun)",
     position: [0, 0, 0],
     color: "#ffd700",
+    texture: "2k_sun.jpg",
     size: 20,
     fun_fact:
       "Our home star! It contains 99.86% of all the mass in our solar system.",
@@ -636,6 +727,7 @@ const celestialObjects = [
     name: "HD 209458 b",
     position: [-40, -80, 140],
     color: "#fdcb6e",
+    texture: "hd.jpg",
     size: 6,
     fun_fact:
       "A scorching desert world, the first exoplanet discovered to have water vapor in its atmosphere.",
@@ -693,6 +785,7 @@ const celestialObjects = [
     name: "Gliese 581g",
     position: [20, 70, -180],
     color: "#00cec9",
+    texture: "gliese.jpg",
     size: 5,
     fun_fact:
       "An ocean world potentially the first discovered Earth-like planet in a habitable zone.",
@@ -722,6 +815,7 @@ const celestialObjects = [
     name: "Hoth Prime",
     position: [90, -140, -30],
     color: "#74b9ff",
+    texture: "hoth.jpg",
     size: 7,
     fun_fact:
       "A frozen ice world with vast glacial formations and polar ice caps.",
@@ -732,6 +826,7 @@ const celestialObjects = [
     name: "Vulcan's Forge",
     position: [-110, 30, 120],
     color: "#e17055",
+    texture: "vulcan.jpg",
     size: 6,
     fun_fact:
       "A volcanic world with active lava flows and constant seismic activity.",
