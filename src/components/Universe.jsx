@@ -5,11 +5,70 @@ import CameraController from "./CameraController";
 import CelestialObject from "./CelestialObject";
 import InfoPanel from "./InfoPanel";
 import SpaceMusic from "./SpaceMusic";
+import { EffectComposer, Bloom, Noise } from "@react-three/postprocessing";
+import { BlendFunction } from "postprocessing";
 import { celestialObjects } from "../data/celestialObjects";
 
 function Universe() {
   const [selectedObject, setSelectedObject] = useState(null);
   const [cameraTarget, setCameraTarget] = useState(null);
+
+  // Play whoosh sound effect using audio file with timing adjustment
+  const playWhooshSound = () => {
+    try {
+      const audio = new Audio("/sounds/whoosh-in.wav");
+      audio.volume = 0.3;
+
+      // Skip the silent part at the beginning (adjust this value as needed)
+      audio.addEventListener("loadeddata", () => {
+        audio.currentTime = 0.5; // Skip first 0.5 seconds
+        audio.play().catch((error) => {
+          console.log("Whoosh sound failed:", error);
+        });
+      });
+
+      // Fallback if loadeddata doesn't fire
+      setTimeout(() => {
+        if (audio.paused) {
+          audio.currentTime = 0.5;
+          audio.play().catch((error) => {
+            console.log("Whoosh sound failed:", error);
+          });
+        }
+      }, 100);
+    } catch (error) {
+      console.log("Whoosh sound failed:", error);
+    }
+  };
+
+  // Play zoom-out sound with timing adjustment
+  const playZoomOutSound = () => {
+    try {
+      const audio = new Audio("/sounds/whoosh-in.wav");
+      audio.volume = 0.2;
+      audio.playbackRate = 0.8; // Slightly slower for zoom-out effect
+
+      // Skip the silent part at the beginning
+      audio.addEventListener("loadeddata", () => {
+        audio.currentTime = 0.5; // Skip first 0.5 seconds
+        audio.play().catch((error) => {
+          console.log("Zoom-out sound failed:", error);
+        });
+      });
+
+      // Fallback if loadeddata doesn't fire
+      setTimeout(() => {
+        if (audio.paused) {
+          audio.currentTime = 0.5;
+          audio.play().catch((error) => {
+            console.log("Zoom-out sound failed:", error);
+          });
+        }
+      }, 100);
+    } catch (error) {
+      console.log("Zoom-out sound failed:", error);
+    }
+  };
 
   // Initialize music when Universe component mounts
   useEffect(() => {
@@ -62,6 +121,9 @@ function Universe() {
   }, []);
 
   const handleObjectClick = (object) => {
+    // Play whoosh sound effect for zoom-in
+    playWhooshSound();
+
     setSelectedObject(object);
     setCameraTarget(object);
 
@@ -75,6 +137,9 @@ function Universe() {
   };
 
   const handleClosePanel = () => {
+    // Play zoom-out sound effect
+    playZoomOutSound();
+
     setSelectedObject(null);
   };
 
@@ -117,6 +182,19 @@ function Universe() {
             fade
             speed={0.5}
           />
+
+          <EffectComposer>
+            <Bloom
+              intensity={1.2}
+              luminanceThreshold={0.2}
+              luminanceSmoothing={0.9}
+            />
+            <Noise
+              premultiply
+              blendFunction={BlendFunction.SCREEN}
+              opacity={0.25}
+            />
+          </EffectComposer>
 
           {/* Celestial objects */}
           {celestialObjects.map((object) => (
