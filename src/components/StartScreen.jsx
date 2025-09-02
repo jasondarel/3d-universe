@@ -113,9 +113,7 @@ function StartScreen({ onStart }) {
 
             {/* Button content */}
             <span className="relative flex items-center justify-center space-x-3">
-              <span>🚀</span>
               <span>START JOURNEY</span>
-              <span>✨</span>
             </span>
 
             {/* Glowing ring effect */}

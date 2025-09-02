@@ -5,6 +5,7 @@ import CameraController from "./CameraController";
 import CelestialObject from "./CelestialObject";
 import InfoPanel from "./InfoPanel";
 import SpaceMusic from "./SpaceMusic";
+import ObjectNavigator from "./ObjectNavigator";
 import { EffectComposer, Bloom, Noise } from "@react-three/postprocessing";
 import { BlendFunction } from "postprocessing";
 import { celestialObjects } from "../data/celestialObjects";
@@ -239,12 +240,18 @@ function Universe() {
       </div>
 
       {/* Performance info */}
-      <div className="absolute top-4 right-4 text-white/50 text-xs z-10">
+      <div className="absolute top-4 right-20 text-white/50 text-xs z-10">
         <div className="bg-black/40 backdrop-blur-sm rounded-lg p-2 border border-white/10">
           <p>Enhanced Visuals Active</p>
           <p>Procedural Textures • Glow Effects</p>
         </div>
       </div>
+
+      {/* Object Navigator */}
+      <ObjectNavigator
+        onObjectSelect={handleObjectClick}
+        selectedObject={selectedObject}
+      />
     </div>
   );
 }

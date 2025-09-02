@@ -12,13 +12,13 @@ export const celestialObjects = [
   {
     id: 2,
     type: "planet",
-    name: "Kepler-442b",
+    name: "Alderaan",
     position: [180, -45, 120],
     color: "#4ecdc4",
     texture: "earth.jpg",
     size: 5,
     fun_fact:
-      "This super-Earth ocean world is located in the habitable zone of its star.",
+      "A peaceful world in the Core Worlds, known for its beauty and diplomatic importance to the Rebel Alliance.",
   },
   {
     id: 3,
@@ -113,7 +113,7 @@ export const celestialObjects = [
     type: "planet",
     name: "Gliese 581g",
     position: [30, 105, -270],
-    color: "#00cec9",
+    color: "#D3D3D3",
     texture: "gliese.jpg",
     size: 5,
     fun_fact:
@@ -171,5 +171,16 @@ export const celestialObjects = [
     hasRings: true,
     fun_fact:
       "A majestic gas giant with spectacular rings made of ice and rock debris.",
+  },
+  {
+    id: 18,
+    type: "deathstar",
+    name: "Death Star",
+    position: [195, -35, 135],
+    color: "#666666",
+    texture: "deathstar.jpg",
+    size: 4,
+    fun_fact:
+      "That's no moon... it's a space station! A technological terror capable of destroying entire planets.",
   },
 ];

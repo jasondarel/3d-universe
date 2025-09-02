@@ -41,7 +41,9 @@ function PlanetComponent({ object, onClick }) {
     if (planetColor.includes("#e17055") || planetColor.includes("#fd79a8"))
       return "#ff6666"; // Red for volcanic worlds
     if (planetColor.includes("#00b894")) return "#66bb6a"; // Green for forest worlds
-    return "#4da6ff"; // Default blue
+    if (planetColor.includes("#D3D3D3") || planetColor.includes("#d3d3d3"))
+      return "#e0e0e0"; // Light gray atmosphere for gray planets
+    return "#cccccc"; // Default neutral gray instead of blue
   };
 
   const normalMap = generateNormalMap();
