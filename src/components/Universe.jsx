@@ -1,18 +1,77 @@
-import React, { useState, Suspense } from "react";
+import React, { useState, Suspense, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Stars } from "@react-three/drei";
 import CameraController from "./CameraController";
 import CelestialObject from "./CelestialObject";
 import InfoPanel from "./InfoPanel";
+import SpaceMusic from "./SpaceMusic";
 import { celestialObjects } from "../data/celestialObjects";
 
 function Universe() {
   const [selectedObject, setSelectedObject] = useState(null);
   const [cameraTarget, setCameraTarget] = useState(null);
 
+  // Initialize music when Universe component mounts
+  useEffect(() => {
+    const initializeMusic = () => {
+      // Check if audio already exists
+      let audio = document.getElementById("space-music-persistent");
+
+      if (!audio) {
+        audio = document.createElement("audio");
+        audio.id = "space-music-persistent";
+        audio.src = "/music/space.mp3";
+        audio.loop = true;
+        audio.volume = 0.3;
+        audio.preload = "auto";
+        audio.crossOrigin = "anonymous";
+
+        // Append to body
+        document.body.appendChild(audio);
+
+        // Try to start immediately
+        const tryStart = async () => {
+          try {
+            await audio.play();
+            console.log("🎵 Space music started with Universe!");
+          } catch (error) {
+            console.log("🔇 Autoplay blocked, will start on first interaction");
+
+            // Set up one-time listener for any interaction
+            const startOnClick = async () => {
+              try {
+                await audio.play();
+                console.log("🎵 Space music started after interaction!");
+              } catch (err) {
+                console.log("Failed to start music:", err);
+              }
+            };
+
+            // Listen for clicks anywhere on the canvas or document
+            document.addEventListener("click", startOnClick, { once: true });
+            document.addEventListener("keydown", startOnClick, { once: true });
+          }
+        };
+
+        tryStart();
+      }
+    };
+
+    // Small delay to ensure DOM is ready
+    setTimeout(initializeMusic, 500);
+  }, []);
+
   const handleObjectClick = (object) => {
     setSelectedObject(object);
     setCameraTarget(object);
+
+    // Ensure music is playing when user interacts with objects
+    const audio = document.getElementById("space-music-persistent");
+    if (audio && audio.paused) {
+      audio.play().catch((error) => {
+        console.log("Music start failed on object click:", error);
+      });
+    }
   };
 
   const handleClosePanel = () => {
@@ -25,6 +84,7 @@ function Universe() {
 
   return (
     <div className="w-full h-screen bg-space-dark">
+      <SpaceMusic />
       <Canvas
         camera={{ position: [0, 0, 100], fov: 60 }}
         className="w-full h-full"
