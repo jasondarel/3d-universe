@@ -52,11 +52,6 @@ function StarComponent({ object, onClick }) {
     onClick(object);
   };
 
-  // Don't render until texture is loaded
-  if (!texture) {
-    return null;
-  }
-
   return (
     <group position={object.position}>
       <mesh
@@ -76,40 +71,11 @@ function StarComponent({ object, onClick }) {
       >
         <sphereGeometry args={[object.size, 32, 32]} />
         <meshStandardMaterial
-          map={texture}
+          map={texture || null}
           emissive={object.color}
-          emissiveIntensity={hovered ? 0.8 : 0.6}
-          roughness={1.0}
+          emissiveIntensity={hovered ? 1.2 : 1.0}
+          roughness={0.8}
           metalness={0.0}
-        />
-      </mesh>
-
-      {/* Star corona layers */}
-      <mesh scale={hovered ? 1.8 : 1.6}>
-        <sphereGeometry args={[object.size, 16, 16]} />
-        <meshBasicMaterial
-          color={object.color}
-          transparent
-          opacity={0.3}
-          side={THREE.BackSide}
-        />
-      </mesh>
-      <mesh scale={hovered ? 2.5 : 2.2}>
-        <sphereGeometry args={[object.size, 12, 12]} />
-        <meshBasicMaterial
-          color={object.color}
-          transparent
-          opacity={0.15}
-          side={THREE.BackSide}
-        />
-      </mesh>
-      <mesh scale={hovered ? 3.2 : 3.0}>
-        <sphereGeometry args={[object.size, 8, 8]} />
-        <meshBasicMaterial
-          color={object.color}
-          transparent
-          opacity={0.05}
-          side={THREE.BackSide}
         />
       </mesh>
     </group>
