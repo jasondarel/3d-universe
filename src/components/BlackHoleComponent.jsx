@@ -46,7 +46,6 @@ function BlackHoleComponent({ object, onClick }) {
           setHovered(false);
           document.body.style.cursor = "default";
         }}
-        scale={hovered ? 1.1 : 1}
         castShadow
         receiveShadow
       >
@@ -61,11 +60,7 @@ function BlackHoleComponent({ object, onClick }) {
       </mesh>
 
       {/* Accretion disk */}
-      <mesh
-        ref={ringRef1}
-        position={[0, 0, 0]}
-        rotation={[Math.PI / 2, 0, 0]}
-      >
+      <mesh ref={ringRef1} position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[object.size * 2, object.size * 0.4, 64, 256]} />
         <meshStandardMaterial
           emissive="#ff6600"

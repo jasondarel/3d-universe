@@ -32,15 +32,6 @@ function ObjectNavigator({ onObjectSelect, selectedObject }) {
     deathstar: "Space Stations",
   };
 
-  // Get type icons
-  const typeIcons = {
-    star: "⭐",
-    planet: "🪐",
-    nebula: "🌌",
-    black_hole: "🕳️",
-    deathstar: "🛰️",
-  };
-
   const toggleGroup = (type) => {
     setExpandedGroups((prev) => ({
       ...prev,
@@ -83,7 +74,9 @@ function ObjectNavigator({ onObjectSelect, selectedObject }) {
       {isMenuOpen && (
         <div className="fixed top-20 right-4 z-40 bg-gray-900/95 backdrop-blur-md text-white rounded-lg border border-gray-600/50 shadow-2xl max-h-[70vh] overflow-y-auto w-80">
           <div className="p-4 border-b border-gray-700">
-            <h2 className="text-xl font-bold text-blue-300">Object Navigator</h2>
+            <h2 className="text-xl font-bold text-blue-300">
+              Object Navigator
+            </h2>
             <p className="text-sm text-gray-400 mt-1">
               Navigate through the universe
             </p>
@@ -98,7 +91,6 @@ function ObjectNavigator({ onObjectSelect, selectedObject }) {
                   className="w-full flex items-center justify-between p-2 rounded hover:bg-gray-800/50 transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">{typeIcons[type]}</span>
                     <span className="font-semibold text-blue-200">
                       {typeDisplayNames[type]}
                     </span>

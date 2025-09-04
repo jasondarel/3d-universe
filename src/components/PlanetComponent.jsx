@@ -91,7 +91,6 @@ function PlanetComponent({ object, onClick }) {
           setHovered(false);
           document.body.style.cursor = "default";
         }}
-        scale={hovered ? 1.1 : 1}
         castShadow
         receiveShadow
       >
