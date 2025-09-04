@@ -1,5 +1,6 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { useTextureLoader } from "../hooks/useTextureLoader";
 
@@ -9,6 +10,59 @@ function NebulaComponent({ object, onClick }) {
   const groupRef = useRef();
   const [hovered, setHovered] = useState(false);
   const texture = useTextureLoader(object, gl);
+  // Nebulas that should use GLB models instead of procedural spheres
+  const usesNebula1GLB =
+    object.name === "Crab Nebula" || object.name === "Eagle Nebula";
+  const usesNebula2GLB =
+    object.name === "Horsehead Nebula" || object.name === "Orion Nebula";
+  const usesNebulaGLB = usesNebula1GLB || usesNebula2GLB;
+
+  // Load BOTH GLBs unconditionally to satisfy Rules of Hooks; cache prevents duplicate network hits
+  const nebula1Model = useGLTF("/models/glb/nebula1.glb");
+  const nebula2Model = useGLTF("/models/glb/nebula2.glb");
+  const nebulaModel = usesNebula1GLB ? nebula1Model : usesNebula2GLB ? nebula2Model : null;
+  // Strong downscale for GLB nebulas ("much much smaller")
+  // Further reduced scale (second shrink request)
+  const glbScale = usesNebula1GLB ? 0.18 : usesNebula2GLB ? 0.14 : 1;
+
+  // Clone the scene so multiple nebulas using the same GLB don't mutate each other
+  const clonedScene = useMemo(() => {
+    if (!usesNebulaGLB || !nebulaModel) return null;
+    const scene = nebulaModel.scene.clone(true);
+    // Ensure materials are unique & tinted
+    scene.traverse((child) => {
+      if (!child.isMesh) return;
+      child.userData = { objectId: object.id };
+      if (!child.material) return;
+
+      const originalMat = child.material;
+      const mat = (child.material = originalMat.clone());
+
+      const targetColor = object.color || "#ffffff";
+      // Color
+      if (mat.color && typeof mat.color.set === "function") {
+        mat.color.set(targetColor);
+      }
+      // Emissive (only if material supports it)
+      if (mat.emissive && typeof mat.emissive.set === "function") {
+        mat.emissive.set(targetColor);
+        if ("emissiveIntensity" in mat) {
+          mat.emissiveIntensity = 0.8;
+        }
+      }
+
+      // Transparency / glow styling
+      if ("transparent" in mat) mat.transparent = true;
+      if ("opacity" in mat) mat.opacity = 0.9;
+      mat.depthWrite = false;
+      mat.blending = THREE.AdditiveBlending;
+      mat.side = THREE.DoubleSide;
+    });
+    return scene;
+  }, [usesNebulaGLB, nebulaModel, object.id, object.color]);
+
+  // No side-effect traversal now; handled inside clonedScene memo
+  useEffect(() => {}, [clonedScene]);
 
   // Generate advanced nebula texture with multiple gas clouds and filaments
   const advancedNebulaTexture = useMemo(() => {
@@ -129,16 +183,14 @@ function NebulaComponent({ object, onClick }) {
 
   useFrame((state) => {
     if (meshRef.current) {
-      // Slow, organic rotation
-      meshRef.current.rotation.x += 0.002;
-      meshRef.current.rotation.y += 0.001;
-      meshRef.current.rotation.z += 0.0005;
-
-      // Update userData for scene traversal
+      if (!usesNebulaGLB) {
+        // Slow, organic rotation (disabled for Crab Nebula GLB)
+        meshRef.current.rotation.x += 0.002;
+        meshRef.current.rotation.y += 0.001;
+        meshRef.current.rotation.z += 0.0005;
+      }
       meshRef.current.userData = { objectId: object.id };
     }
-
-    // Apply floating motion to the entire group
     if (groupRef.current) {
       groupRef.current.position.y =
         object.position[1] + Math.sin(state.clock.elapsedTime * 0.5) * 0.3;
@@ -150,10 +202,37 @@ function NebulaComponent({ object, onClick }) {
     onClick(object);
   };
 
-  // Don't render until texture is loaded
-  if (!texture && !advancedNebulaTexture) {
-    return null;
+  // If GLB is used, render that instead of procedural layers
+  if (usesNebulaGLB) {
+    if (!clonedScene) return null; // Wait for clone
+    return (
+      <group
+        ref={groupRef}
+        position={[object.position[0], object.position[1], object.position[2]]}
+      >
+        <primitive
+          ref={meshRef}
+          object={clonedScene}
+          scale={[object.size * glbScale, object.size * glbScale, object.size * glbScale]}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick(object);
+          }}
+          onPointerOver={() => {
+            setHovered(true);
+            document.body.style.cursor = "pointer";
+          }}
+          onPointerOut={() => {
+            setHovered(false);
+            document.body.style.cursor = "default";
+          }}
+        />
+      </group>
+    );
   }
+
+  // Don't render until texture is ready for procedural nebulas
+  if (!texture && !advancedNebulaTexture) return null;
 
   // Use advanced texture if available, fallback to basic texture
   const activeTexture = advancedNebulaTexture || texture;
@@ -239,3 +318,7 @@ function NebulaComponent({ object, onClick }) {
 }
 
 export default NebulaComponent;
+
+// Preload both nebula models so they're ready when needed
+useGLTF.preload("/models/glb/nebula1.glb");
+useGLTF.preload("/models/glb/nebula2.glb");

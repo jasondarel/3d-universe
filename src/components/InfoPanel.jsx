@@ -59,16 +59,6 @@ function InfoPanel({ object, onClose }) {
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div
-                className="w-4 h-4 rounded-full border border-white/30"
-                style={{ backgroundColor: object.color }}
-              ></div>
-              <span className="text-sm text-gray-300">
-                Color: {object.color}
-              </span>
-            </div>
-
             <div className="text-sm text-gray-300">
               <span>Size: {object.size} units</span>
             </div>

@@ -104,7 +104,8 @@ export const celestialObjects = [
     type: "nebula",
     name: "Eagle Nebula",
     position: [350, -50, 95],
-    color: "#e84393",
+    // Adjusted to a brighter pink to differentiate from Crab Nebula
+    color: "#ff69b4",
     size: 18,
     fun_fact: 'Home to the famous "Pillars of Creation" stellar formation.',
   },

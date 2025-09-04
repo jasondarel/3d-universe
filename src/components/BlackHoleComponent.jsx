@@ -1,76 +1,85 @@
-import React, { useState, useRef } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
+import React, { useState, useRef, useMemo, useEffect } from "react";
+import { useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
-import { useTextureLoader } from "../hooks/useTextureLoader";
+
+// Preload once
+useGLTF.preload("/models/glb/black_hole.glb");
 
 function BlackHoleComponent({ object, onClick }) {
-  const { gl } = useThree();
-  const meshRef = useRef();
-  const ringRef1 = useRef();
+  const groupRef = useRef();
+  const modelRef = useRef();
   const [hovered, setHovered] = useState(false);
-  const texture = useTextureLoader(object, gl);
+  const { scene } = useGLTF("/models/glb/black_hole.glb");
 
+  // Clone & prepare model only once per mount
+  const preparedModel = useMemo(() => {
+    if (!scene) return null;
+    const cloned = scene.clone(true);
+    // Ensure materials are not shared & add subtle emissive so it's visible in dark scenes
+    cloned.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        if (child.material) {
+          child.material = child.material.clone();
+          if (!child.material.emissive)
+            child.material.emissive = new THREE.Color(0x000000);
+          child.material.emissiveIntensity = 0.4;
+        }
+      }
+    });
+    return cloned;
+  }, [scene]);
+
+  // Keep rotation animation
   useFrame((state) => {
-    if (meshRef.current) {
-      meshRef.current.rotation.x += 0.005;
-      meshRef.current.rotation.y += 0.005;
-    }
-
-    if (ringRef1.current) {
-      ringRef1.current.rotation.z += 0.01; // disk spin
-      ringRef1.current.rotation.x =
-        Math.sin(state.clock.elapsedTime * 0.2) * 0.05; // wobble
+    if (modelRef.current) {
+      modelRef.current.rotation.y += 0.005;
+      modelRef.current.rotation.x =
+        Math.sin(state.clock.elapsedTime * 0.2) * 0.1;
     }
   });
+
+  useEffect(() => {
+    if (preparedModel && modelRef.current == null) {
+      modelRef.current = preparedModel;
+    }
+  }, [preparedModel]);
 
   const handleClick = (e) => {
     e.stopPropagation();
     onClick(object);
   };
 
-  // Don't render until texture is loaded
-  if (!texture) {
-    return null;
-  }
+  if (!preparedModel) return null;
+
+  const baseScale = object?.size || 1;
+  const hoverFactor = hovered ? 1.08 : 1; // Slight pop on hover
 
   return (
-    <group position={object.position}>
-      <mesh
-        ref={meshRef}
-        onClick={handleClick}
-        onPointerOver={() => {
-          setHovered(true);
-          document.body.style.cursor = "pointer";
-        }}
-        onPointerOut={() => {
-          setHovered(false);
-          document.body.style.cursor = "default";
-        }}
-        castShadow
-        receiveShadow
-      >
-        <sphereGeometry args={[object.size * 1.6, 64, 64]} />
-        <meshStandardMaterial
-          color="black"
-          emissive="black"
-          emissiveIntensity={0}
-          roughness={1}
-          metalness={0}
-        />
-      </mesh>
-
-      {/* Accretion disk */}
-      <mesh ref={ringRef1} position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[object.size * 2, object.size * 0.4, 64, 256]} />
-        <meshStandardMaterial
-          emissive="#ff6600"
-          emissiveIntensity={1.5}
-          transparent
-          opacity={0.8}
-          side={THREE.DoubleSide}
-          blending={THREE.AdditiveBlending}
-        />
-      </mesh>
+    <group
+      ref={groupRef}
+      position={object.position}
+      onClick={handleClick}
+      onPointerOver={() => {
+        setHovered(true);
+        document.body.style.cursor = "pointer";
+      }}
+      onPointerOut={() => {
+        setHovered(false);
+        document.body.style.cursor = "default";
+      }}
+    >
+      <primitive
+        ref={modelRef}
+        object={preparedModel}
+        scale={[
+          baseScale * hoverFactor,
+          baseScale * hoverFactor,
+          baseScale * hoverFactor,
+        ]}
+      />
     </group>
   );
 }
