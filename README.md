@@ -1,12 +1,47 @@
-# React + Vite
+## 3D Interactive Universe Explorer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+### Project Overview
 
-Currently, two official plugins are available:
+An interactive, exploratory 3D universe built with React and Three.js (via react-three-fiber). Users can freely navigate space, select celestial objects (stars, planets, nebulae, a black hole, and a sci‑fi space station), and view contextual information through animated UI panels. The experience blends procedural visual touches, post‑processing effects, subtle audio ambience, and smooth camera fly‑to animations to create an engaging mini cosmos.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Technologies Used
 
-## Expanding the ESLint configuration
+- React 18 + Vite (fast dev + HMR bundling)
+- @react-three/fiber (Three.js renderer for React)
+- @react-three/drei (helpers: Stars, OrbitControls, etc.)
+- @react-three/postprocessing + postprocessing (Bloom, Noise effects)
+- Three.js core (geometry, materials, vectors, custom animation logic)
+- Framer Motion (animated Info Panel & UI transitions)
+- Tailwind CSS (utility-first responsive UI styling)
+- Custom hooks (texture loading abstraction)
+- HTML5 Audio API (ambient music + interaction SFX)
+- ESLint (project linting) & modern ES module setup
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Features
+
+- Real-time 3D rendering of a curated mini universe with multiple object types.
+- Click-to-focus with smooth eased camera fly‑to animations (including dynamic tracking for moving nebulae).
+- Dual navigation: OrbitControls (rotate / zoom / pan) + WASD translational movement with shift speed boost and spherical boundary clamp.
+- Object Navigator panel grouped by type (stars, planets, nebulae, black holes, space stations) with collapsible sections.
+- Rich Info Panel: animated entry/exit, contextual styling & emojis per object type, fun facts, positional & size metadata.
+- Procedural & visual polish: starfield, bloom glow, screen-space noise, atmospheric shells, multi-layer ring systems, pseudo normal maps for surface detail.
+- Distinct special objects: animated nebulae, a black hole representation, and a Death Star easter‑egg style space station.
+- Persistent ambient space music with graceful autoplay fallback (starts on first user interaction if blocked).
+- Interaction sound effects (whoosh on zoom-in / zoom-out) with timing adjustments.
+- Responsive overlay UI with translucent, blurred panels using Tailwind utilities.
+- Clean modular component architecture (Universe orchestrator + focused subcomponents per object type).
+
+#### Setup
+
+#### Prerequisites
+
+- Node.js 18+
+- npm
+
+#### 1. Install dependencies
+
+npm install
+
+#### 2. Start the development server
+
+npm run dev

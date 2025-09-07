@@ -45,9 +45,9 @@ function CameraController({ target, onComplete, movementRadius = 290 }) {
         });
       }
 
-  const offset = new THREE.Vector3(20, 15, distance);
-  targetOffsetRef.current.copy(offset);
-  const newCameraPos = actualTargetPos.clone().add(offset);
+      const offset = new THREE.Vector3(20, 15, distance);
+      targetOffsetRef.current.copy(offset);
+      const newCameraPos = actualTargetPos.clone().add(offset);
 
       const startPos = currentPos.clone();
       const startTarget = controlsRef.current.target.clone();
@@ -75,7 +75,9 @@ function CameraController({ target, onComplete, movementRadius = 290 }) {
         }
 
         // Interpolate camera position
-  const dynamicCameraPos = currentTargetPos.clone().add(targetOffsetRef.current);
+        const dynamicCameraPos = currentTargetPos
+          .clone()
+          .add(targetOffsetRef.current);
         camera.position.lerpVectors(startPos, dynamicCameraPos, eased);
 
         // Interpolate camera target (what it's looking at)
@@ -117,13 +119,16 @@ function CameraController({ target, onComplete, movementRadius = 290 }) {
     // Direction vectors from camera - use camera's matrix for reliable directions
     const cameraMatrix = camera.matrixWorld;
     const right = new THREE.Vector3().setFromMatrixColumn(cameraMatrix, 0); // camera's X axis (right)
-    const forward = new THREE.Vector3().setFromMatrixColumn(cameraMatrix, 2).negate(); // camera's -Z axis (forward)
-    
+    const forward = new THREE.Vector3()
+      .setFromMatrixColumn(cameraMatrix, 2)
+      .negate(); // camera's -Z axis (forward)
+
     // Keep movement level (no vertical component)
     right.y = 0;
     forward.y = 0;
     right.normalize();
-    forward.normalize();    let moved = false;
+    forward.normalize();
+    let moved = false;
     const moveVec = new THREE.Vector3();
     if (keysRef.current["w"]) {
       moveVec.add(forward);
@@ -157,7 +162,10 @@ function CameraController({ target, onComplete, movementRadius = 290 }) {
     if (len > movementRadius) {
       camera.position.setLength(movementRadius);
       // Keep target at same relative offset
-      const toTarget = new THREE.Vector3().subVectors(controlsRef.current.target, camera.position);
+      const toTarget = new THREE.Vector3().subVectors(
+        controlsRef.current.target,
+        camera.position
+      );
       if (toTarget.length() > 600) {
         // Safety clamp on extreme offsets
         toTarget.setLength(600);
