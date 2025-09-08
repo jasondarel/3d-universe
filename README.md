@@ -45,3 +45,17 @@ npm install
 #### 2. Start the development server
 
 npm run dev
+
+#### AI Support
+
+Model Creation
+Helped in creation of simple models (Sun, Planets).
+
+Debugging
+Helped fix issues with code.
+
+Resource Finding for 3D models
+Help search for websites to use free 3D models.
+
+Model Implementation
+Assisted in applying models inside the project.
