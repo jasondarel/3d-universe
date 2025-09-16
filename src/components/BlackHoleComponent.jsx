@@ -1,7 +1,6 @@
 import React, { useState, useRef, useMemo, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
-import * as THREE from "three";
 
 // Preload once
 useGLTF.preload("/models/glb/black_hole.glb");
@@ -16,19 +15,41 @@ function BlackHoleComponent({ object, onClick }) {
   const preparedModel = useMemo(() => {
     if (!scene) return null;
     const cloned = scene.clone(true);
-    // Ensure materials are not shared & add subtle emissive so it's visible in dark scenes
+
+    // Ensure materials are not shared and retain the emissive glow for bloom
     cloned.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-        if (child.material) {
-          child.material = child.material.clone();
-          if (!child.material.emissive)
-            child.material.emissive = new THREE.Color(0x000000);
-          child.material.emissiveIntensity = 0.4;
+      if (!child.isMesh || !child.material) return;
+
+      child.castShadow = true;
+      child.receiveShadow = true;
+
+      const sourceMaterial = child.material;
+      const originalEmissive =
+        sourceMaterial.emissive && sourceMaterial.emissive.clone
+          ? sourceMaterial.emissive.clone()
+          : null;
+      const originalIntensity =
+        "emissiveIntensity" in sourceMaterial
+          ? sourceMaterial.emissiveIntensity
+          : null;
+
+      child.material = sourceMaterial.clone();
+
+      if (child.material.emissive) {
+        // Preserve authored emissive color or fallback to a warm glow
+        if (originalEmissive) {
+          child.material.emissive.copy(originalEmissive);
+        } else {
+          child.material.emissive.set(0xffffcc);
         }
       }
+
+      if ("emissiveIntensity" in child.material) {
+        child.material.emissiveIntensity =
+          originalIntensity != null ? Math.max(originalIntensity, 1.5) : 1.5;
+      }
     });
+
     return cloned;
   }, [scene]);
 
